@@ -29,6 +29,9 @@ func main() {
 		body := fmt.Sprintf("Hits: %v", apiCfg.fileServerHits.Load())
 		w.Write([]byte(body))
 	})
+	mux.Handle("/reset", apiCfg.middleWareMetricsReset(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+	})))
 
 	server.ListenAndServe()
 }
@@ -36,6 +39,13 @@ func main() {
 func (cfg *apiConfig) middleWareMetricsInt(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cfg.fileServerHits.Add(1)
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (cfg *apiConfig) middleWareMetricsReset(next http.HandlerFunc) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cfg.fileServerHits.Swap(0)
 		next.ServeHTTP(w, r)
 	})
 }
