@@ -29,12 +29,13 @@ func apiValidateChirpHandler(w http.ResponseWriter, r *http.Request) {
 
 	if len([]rune(reqData.Body)) > 140 {
 		respondWithError(w, 400, "Your message is too long")
+		return
 	}
 
 	type responseData struct {
-		Valid bool `json:"valid"`
+		CleanedBody string `json:"cleaned_body"`
 	}
-	response := responseData{Valid: true}
+	response := responseData{CleanedBody: profanityFilter(reqData.Body)}
 	respondWithJSON(w, 200, response)
 }
 
