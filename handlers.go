@@ -174,3 +174,44 @@ func apiGetChirpByIdHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w 
 	
 	respondWithJSON(w, 200, ChirpResponse(chirp))
 }}
+
+func apiLoginHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w http.ResponseWriter, r *http.Request) {
+	type requestData struct {
+		Email string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	reqData := requestData{}
+	err := decoder.Decode(&reqData)
+	if err != nil {
+		log.Printf("Error decoding request body: %v", err)
+		w.WriteHeader(500)
+		return
+	}
+
+	if reqData.Email == "" || reqData.Password == "" {
+		respondWithError(w, 401, "Incorrect email or password")
+		return
+	}
+
+	user, err := apiCfg.database.GetUserByEmail(r.Context(),reqData.Email)
+	if err != nil {
+		respondWithError(w, 401, "Incorrect email or password")
+		return
+	}
+
+	err = auth.CheckPasswordHash(reqData.Password, user.HashedPassword)
+	if err != nil {
+		respondWithError(w, 401, "Incorrect email or password")
+		return
+	}
+
+	response := UserResponse{
+		ID: user.ID,
+		Email: user.Email,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+	}
+	respondWithJSON(w, 200, response)
+}}
