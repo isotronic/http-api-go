@@ -115,3 +115,19 @@ func apiCreateUserHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w ht
 
 	respondWithJSON(w, 201, UserResponse(user))
 }}
+
+func apiGetAllChirpsHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w http.ResponseWriter, r *http.Request) {
+	chirps, err := apiCfg.database.GetAllChirps(r.Context())
+	if err != nil {
+		log.Printf("Error fetching chirps: %v", err)
+		respondWithError(w, 500, "Error fetching chirps")
+		return
+	}
+
+	chirpResponse := make([]ChirpResponse, len(chirps))
+	for i, chirp := range chirps {
+		chirpResponse[i] = ChirpResponse(chirp)
+	}
+
+	respondWithJSON(w, 200, chirpResponse)
+}}
