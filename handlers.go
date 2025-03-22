@@ -49,9 +49,21 @@ func apiValidateChirpHandler(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, 200, response)
 }
 
-func adminResetHandler(w http.ResponseWriter, r *http.Request) {
+func adminResetHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w http.ResponseWriter, r *http.Request) {
+	if apiCfg.platform == "" {
+		w.WriteHeader(403)
+		return
+	}
+
+	err := apiCfg.database.ResetUsers(r.Context())
+	if err != nil {
+		log.Printf("Error deleting users: %v", err)
+		respondWithError(w, 500, "Error deleting users")
+		return
+	}
+
 	w.WriteHeader(200)
-}
+}}
 
 func adminMetricsHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

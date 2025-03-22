@@ -15,6 +15,7 @@ import (
 type apiConfig struct {
 	fileServerHits atomic.Int32
 	database *database.Queries
+	platform string
 }
 
 func main() {
@@ -24,6 +25,8 @@ func main() {
 	mux := http.NewServeMux()
 	server.Addr = ":8080"
 	server.Handler = mux
+
+	apiCfg.platform = os.Getenv("PLATFORM")
 
 	dbURL := os.Getenv("DB_URL")
 	if dbURL == "" {
@@ -43,7 +46,7 @@ func main() {
 	mux.HandleFunc("POST /api/users", apiCreateUserHandler(&apiCfg))
 
 	mux.HandleFunc("GET /admin/metrics", adminMetricsHandler(&apiCfg))
-	mux.Handle("POST /admin/reset", apiCfg.middleWareMetricsReset(http.HandlerFunc(adminResetHandler)))
+	mux.Handle("POST /admin/reset", apiCfg.middleWareMetricsReset(http.HandlerFunc(adminResetHandler(&apiCfg))))
 
 	server.ListenAndServe()
 }
@@ -57,7 +60,9 @@ func (cfg *apiConfig) middleWareMetricsInt(next http.Handler) http.Handler {
 
 func (cfg *apiConfig) middleWareMetricsReset(next http.HandlerFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cfg.fileServerHits.Swap(0)
+		if cfg.platform == "dev" {
+			cfg.fileServerHits.Swap(0)
+		}
 		next.ServeHTTP(w, r)
 	})
 }
