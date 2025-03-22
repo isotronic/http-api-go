@@ -131,3 +131,27 @@ func apiGetAllChirpsHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w 
 
 	respondWithJSON(w, 200, chirpResponse)
 }}
+
+func apiGetChirpByIdHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w http.ResponseWriter, r *http.Request) {
+	pathParam := r.PathValue("chirpID")
+	if pathParam == "" {
+		respondWithError(w, 400, "No chirpID provided")
+		return
+	}
+
+	chirpID, err := uuid.Parse(pathParam)
+	if err != nil {
+		log.Printf("Error parsing UUID: %v", err)
+		respondWithError(w, 500, "ChirpID is invalid")
+		return
+	}
+
+	chirp, err := apiCfg.database.GetChirpById(r.Context(), chirpID)
+	if err != nil {
+		log.Printf("Error fetching chirp: %v", err)
+		respondWithError(w, 404, "No chirp with that ID exists")
+		return
+	}
+	
+	respondWithJSON(w, 200, ChirpResponse(chirp))
+}}
