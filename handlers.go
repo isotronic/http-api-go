@@ -5,17 +5,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/google/uuid"
+	"github.com/isotronic/http-go-server/internal/database"
 )
-
-type User struct {
-	ID        uuid.UUID `json:"id"`
-	Email     string    `json:"email"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-}
 
 func apiHealthzHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
@@ -23,9 +16,10 @@ func apiHealthzHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }
 
-func apiValidateChirpHandler(w http.ResponseWriter, r *http.Request) {
+func apiChirpsHandler(apiCfg *apiConfig) http.HandlerFunc {return func(w http.ResponseWriter, r *http.Request) {
 	type requestData struct {
 		Body string `json:"body"`
+		UserID string `json:"user_id"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -42,12 +36,24 @@ func apiValidateChirpHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	type responseData struct {
-		CleanedBody string `json:"cleaned_body"`
+	body := profanityFilter(reqData.Body)
+	userID, err := uuid.Parse(reqData.UserID)
+	if err != nil {
+		log.Printf("Error parsing UUID: %v", err)
+		respondWithError(w, 400, "User ID is invalid")
+		return
 	}
-	response := responseData{CleanedBody: profanityFilter(reqData.Body)}
-	respondWithJSON(w, 200, response)
-}
+
+	newChirp := database.CreateChirpParams{UserID: userID, Body: body}
+	chirp, err := apiCfg.database.CreateChirp(r.Context(), newChirp)
+	if err != nil {
+		log.Panicf("Error creating chirp: %v", err)
+		respondWithError(w, 500, "Error creating chirp")
+		return
+	}
+
+	respondWithJSON(w, 201, ChirpResponse(chirp))
+}}
 
 func adminResetHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w http.ResponseWriter, r *http.Request) {
 	if apiCfg.platform == "" {
@@ -107,5 +113,5 @@ func apiCreateUserHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w ht
 		return
 	}
 
-	respondWithJSON(w, 201, User(user))
+	respondWithJSON(w, 201, UserResponse(user))
 }}
