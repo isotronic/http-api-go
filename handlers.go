@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	"github.com/isotronic/http-go-server/internal/auth"
 	"github.com/isotronic/http-go-server/internal/database"
 )
 
@@ -90,6 +91,7 @@ func adminMetricsHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w htt
 func apiCreateUserHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w http.ResponseWriter, r *http.Request) {
 	type requestData struct {
 		Email string `json:"email"`
+		Password string `json:"password"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -105,15 +107,32 @@ func apiCreateUserHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w ht
 		respondWithError(w, 400, "No email was provided")
 		return
 	}
+	if reqData.Password == "" {
+		respondWithError(w, 400, "No password was provided")
+		return
+	}
 
-	user, err := apiCfg.database.CreateUser(r.Context(), reqData.Email)
+	passHash, err := auth.HashPassword(reqData.Password)
+	if err != nil {
+		log.Printf("Error hashing password: %v", err)
+		respondWithError(w, 500, "Error hashing password")
+	}
+
+	createUserParams := database.CreateUserParams{Email: reqData.Email, HashedPassword: passHash}
+	user, err := apiCfg.database.CreateUser(r.Context(), createUserParams)
 	if err != nil {
 		log.Printf("Error creating user: %v", err)
 		respondWithError(w, 500, "Error creating user")
 		return
 	}
 
-	respondWithJSON(w, 201, UserResponse(user))
+	newUser := UserResponse{
+		ID: user.ID,
+		Email: user.Email,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+	}
+	respondWithJSON(w, 201, newUser)
 }}
 
 func apiGetAllChirpsHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w http.ResponseWriter, r *http.Request) {
