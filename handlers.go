@@ -17,10 +17,6 @@ func apiValidateChirpHandler(w http.ResponseWriter, r *http.Request) {
 	type requestData struct {
 		Body string `json:"body"`
 	}
-	type responseData struct {
-		Valid bool `json:"valid"`
-		Error string `json:"error"`
-	}
 
 	decoder := json.NewDecoder(r.Body)
 	reqData := requestData{}
@@ -31,27 +27,15 @@ func apiValidateChirpHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resData := responseData{}
 	if len([]rune(reqData.Body)) > 140 {
-		resData.Error = "Chirp is too long"
-	} else {
-		resData.Valid = true
+		respondWithError(w, 400, "Your message is too long")
 	}
 
-	data, err := json.Marshal(resData)
-	if err != nil {
-		log.Printf("Error marshalling response: %v", err)
-		w.WriteHeader(500)
-		return
+	type responseData struct {
+		Valid bool `json:"valid"`
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	if resData.Valid {
-		w.WriteHeader(200)
-	} else {
-		w.WriteHeader(400)
-	}
-	w.Write(data)
+	response := responseData{Valid: true}
+	respondWithJSON(w, 200, response)
 }
 
 func adminResetHandler(w http.ResponseWriter, r *http.Request) {
