@@ -5,7 +5,17 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
+
+	"github.com/google/uuid"
 )
+
+type User struct {
+	ID        uuid.UUID `json:"id"`
+	Email     string    `json:"email"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
 
 func apiHealthzHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
@@ -57,4 +67,33 @@ func adminMetricsHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w htt
 		apiCfg.fileServerHits.Load())
 	
 		w.Write([]byte(body))
+}}
+
+func apiCreateUserHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w http.ResponseWriter, r *http.Request) {
+	type requestData struct {
+		Email string `json:"email"`
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	reqData := requestData{}
+	err := decoder.Decode(&reqData)
+	if err != nil {
+		log.Printf("Error decoding request body: %v", err)
+		w.WriteHeader(500)
+		return
+	}
+
+	if reqData.Email == "" {
+		respondWithError(w, 400, "No email was provided")
+		return
+	}
+
+	user, err := apiCfg.database.CreateUser(r.Context(), reqData.Email)
+	if err != nil {
+		log.Printf("Error creating user: %v", err)
+		respondWithError(w, 500, "Error creating user")
+		return
+	}
+
+	respondWithJSON(w, 201, User(user))
 }}
