@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/isotronic/http-go-server/internal/auth"
@@ -17,15 +18,25 @@ func apiHealthzHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }
 
-func apiChirpsHandler(apiCfg *apiConfig) http.HandlerFunc {return func(w http.ResponseWriter, r *http.Request) {
+func apiPostChirpsHandler(apiCfg *apiConfig) http.HandlerFunc {return func(w http.ResponseWriter, r *http.Request) {
 	type requestData struct {
 		Body string `json:"body"`
-		UserID string `json:"user_id"`
+	}
+
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, 401, err.Error())
+		return
+	}
+
+	userID, err := auth.ValidateJWT(token, apiCfg.tokenSecret)
+	if err != nil {
+		respondWithError(w, 401, "Invalid token")
 	}
 
 	decoder := json.NewDecoder(r.Body)
 	reqData := requestData{}
-	err := decoder.Decode(&reqData)
+	err = decoder.Decode(&reqData)
 	if err != nil {
 		log.Printf("Error decoding request body: %v", err)
 		w.WriteHeader(500)
@@ -38,13 +49,6 @@ func apiChirpsHandler(apiCfg *apiConfig) http.HandlerFunc {return func(w http.Re
 	}
 
 	body := profanityFilter(reqData.Body)
-	userID, err := uuid.Parse(reqData.UserID)
-	if err != nil {
-		log.Printf("Error parsing UUID: %v", err)
-		respondWithError(w, 400, "User ID is invalid")
-		return
-	}
-
 	newChirp := database.CreateChirpParams{UserID: userID, Body: body}
 	chirp, err := apiCfg.database.CreateChirp(r.Context(), newChirp)
 	if err != nil {
@@ -179,6 +183,7 @@ func apiLoginHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w http.Re
 	type requestData struct {
 		Email string `json:"email"`
 		Password string `json:"password"`
+		ExpiresInSeconds int `json:"expires_in_seconds"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -207,11 +212,19 @@ func apiLoginHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w http.Re
 		return
 	}
 
-	response := UserResponse{
-		ID: user.ID,
-		Email: user.Email,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
+	if reqData.ExpiresInSeconds == 0 || reqData.ExpiresInSeconds > 3600 {
+		reqData.ExpiresInSeconds = 3600
+	}
+
+	expiresIn := time.Duration(reqData.ExpiresInSeconds) * time.Second
+	token, err := auth.MakeJWT(user.ID, apiCfg.tokenSecret, expiresIn)
+	if err != nil {
+		log.Printf("Error making token: %v", err)
+		w.WriteHeader(500)
+	}
+
+	response := LoginResponse{
+		Token: token,
 	}
 	respondWithJSON(w, 200, response)
 }}

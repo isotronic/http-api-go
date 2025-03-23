@@ -16,6 +16,7 @@ type apiConfig struct {
 	fileServerHits atomic.Int32
 	database *database.Queries
 	platform string
+	tokenSecret string
 }
 
 func main() {
@@ -27,6 +28,7 @@ func main() {
 	server.Handler = mux
 
 	apiCfg.platform = os.Getenv("PLATFORM")
+	apiCfg.tokenSecret = os.Getenv("TOKEN_SECRET")
 
 	dbURL := os.Getenv("DB_URL")
 	if dbURL == "" {
@@ -44,7 +46,7 @@ func main() {
 	mux.HandleFunc("GET /api/healthz", apiHealthzHandler)
 	mux.HandleFunc("GET /api/chirps", apiGetAllChirpsHandler(&apiCfg))
 	mux.HandleFunc("GET /api/chirps/{chirpID}", apiGetChirpByIdHandler(&apiCfg))
-	mux.HandleFunc("POST /api/chirps", apiChirpsHandler(&apiCfg))
+	mux.HandleFunc("POST /api/chirps", apiPostChirpsHandler(&apiCfg))
 	mux.HandleFunc("POST /api/users", apiCreateUserHandler(&apiCfg))
 	mux.HandleFunc("POST /api/login", apiLoginHandler(&apiCfg))
 

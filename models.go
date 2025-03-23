@@ -6,6 +6,10 @@ import (
 	"github.com/google/uuid"
 )
 
+type LoginResponse struct {
+	Token 		string 		`json:"token"`
+}
+
 type UserResponse struct {
 	ID        uuid.UUID `json:"id"`
 	Email     string    `json:"email"`
@@ -16,7 +20,7 @@ type UserResponse struct {
 type ChirpResponse struct {
 	ID        uuid.UUID `json:"id"`
 	UserID    uuid.UUID `json:"user_id"`
-	Body      string `json:"body"`
+	Body      string 		`json:"body"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
