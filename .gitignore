@@ -2,3 +2,4 @@ out
 http-go-server
 
 .env
+.vscode
