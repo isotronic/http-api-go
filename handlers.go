@@ -242,3 +242,28 @@ func apiLoginHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w http.Re
 	}
 	respondWithJSON(w, 200, response)
 }}
+
+func apiRefreshHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w http.ResponseWriter, r *http.Request) {
+	refresh, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, 401, err.Error())
+		return
+	}
+
+	refreshEntry, err := apiCfg.database.GetUserFromRefreshToken(r.Context(), refresh)
+	if err != nil || refreshEntry.ExpiresAt.Before(time.Now()) {
+		respondWithError(w, 401, "Invalid or expired token")
+		return
+	}
+
+	jwt, err := auth.MakeJWT(refreshEntry.UserID, apiCfg.tokenSecret, time.Duration(60 * 60) * time.Second)
+	if err != nil {
+		log.Printf("Error making JWT: %v", err)
+		w.WriteHeader(500)
+	}
+
+	response := RefreshResponse{
+		AccessToken: jwt,
+	}
+	respondWithJSON(w, 200, response)
+}}

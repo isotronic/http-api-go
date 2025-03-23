@@ -11,6 +11,10 @@ type LoginResponse struct {
 	RefreshToken 	string `json:"refresh_token"`
 }
 
+type RefreshResponse struct {
+	AccessToken 	string `json:"token"`
+}
+
 type UserResponse struct {
 	ID        uuid.UUID `json:"id"`
 	Email     string    `json:"email"`
