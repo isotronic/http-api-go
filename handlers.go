@@ -266,7 +266,7 @@ func apiRefreshHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w http.
 	}
 
 	refreshEntry, err := apiCfg.database.GetUserFromRefreshToken(r.Context(), refresh)
-	if err != nil || refreshEntry.ExpiresAt.Before(time.Now()) {
+	if err != nil || refreshEntry.ExpiresAt.Before(time.Now()) || refreshEntry.RevokedAt.Valid  {
 		respondWithError(w, 401, "Invalid or expired token")
 		return
 	}
@@ -275,6 +275,7 @@ func apiRefreshHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w http.
 	if err != nil {
 		log.Printf("Error making JWT: %v", err)
 		w.WriteHeader(500)
+		return
 	}
 
 	response := RefreshResponse{
