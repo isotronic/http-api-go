@@ -7,7 +7,8 @@ import (
 )
 
 type LoginResponse struct {
-	Token 		string 		`json:"token"`
+	AccessToken 	string `json:"token"`
+	RefreshToken 	string `json:"refresh_token"`
 }
 
 type UserResponse struct {

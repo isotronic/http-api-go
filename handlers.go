@@ -183,7 +183,6 @@ func apiLoginHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w http.Re
 	type requestData struct {
 		Email string `json:"email"`
 		Password string `json:"password"`
-		ExpiresInSeconds int `json:"expires_in_seconds"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -212,19 +211,34 @@ func apiLoginHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w http.Re
 		return
 	}
 
-	if reqData.ExpiresInSeconds == 0 || reqData.ExpiresInSeconds > 3600 {
-		reqData.ExpiresInSeconds = 3600
-	}
-
-	expiresIn := time.Duration(reqData.ExpiresInSeconds) * time.Second
-	token, err := auth.MakeJWT(user.ID, apiCfg.tokenSecret, expiresIn)
+	expiresIn := time.Duration(60 * 60) * time.Second
+	jwt, err := auth.MakeJWT(user.ID, apiCfg.tokenSecret, expiresIn)
 	if err != nil {
 		log.Printf("Error making token: %v", err)
 		w.WriteHeader(500)
 	}
 
+	refresh, err := auth.MakeRefreshToken()
+	if err != nil {
+		log.Printf("Error making refresh token: %v", err)
+		w.WriteHeader(500)
+	}
+
+	insertParams := database.InsertRefreshTokenParams{
+		Token: refresh,
+		UserID: user.ID,
+		ExpiresAt: time.Now().Add(60 * 24 * time.Hour),
+	}
+	_, err = apiCfg.database.InsertRefreshToken(r.Context(), insertParams)
+	if err != nil {
+		log.Printf("Error inserting refresh token: %v", err)
+		w.WriteHeader(500)
+		return
+	}
+
 	response := LoginResponse{
-		Token: token,
+		AccessToken: jwt,
+		RefreshToken: refresh,
 	}
 	respondWithJSON(w, 200, response)
 }}
