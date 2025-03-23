@@ -32,6 +32,7 @@ func apiPostChirpsHandler(apiCfg *apiConfig) http.HandlerFunc {return func(w htt
 	userID, err := auth.ValidateJWT(token, apiCfg.tokenSecret)
 	if err != nil {
 		respondWithError(w, 401, "Invalid token")
+		return
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -52,7 +53,7 @@ func apiPostChirpsHandler(apiCfg *apiConfig) http.HandlerFunc {return func(w htt
 	newChirp := database.CreateChirpParams{UserID: userID, Body: body}
 	chirp, err := apiCfg.database.CreateChirp(r.Context(), newChirp)
 	if err != nil {
-		log.Panicf("Error creating chirp: %v", err)
+		log.Printf("Error creating chirp: %v", err)
 		respondWithError(w, 500, "Error creating chirp")
 		return
 	}
