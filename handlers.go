@@ -267,3 +267,17 @@ func apiRefreshHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w http.
 	}
 	respondWithJSON(w, 200, response)
 }}
+
+func apiRevokeHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w http.ResponseWriter, r *http.Request) {
+	refresh, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, 401, err.Error())
+	}
+
+	_, err = apiCfg.database.RevokeRefreshToken(r.Context(), refresh)
+	if err != nil {
+		log.Printf("Error revoking refresh token: %v", err)
+		w.WriteHeader(500)
+	}
+	w.WriteHeader(204)
+}}
