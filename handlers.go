@@ -154,6 +154,65 @@ func apiCreateUserHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w ht
 	respondWithJSON(w, 201, newUser)
 }}
 
+func apiUpdateUserHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w http.ResponseWriter, r *http.Request) {
+	type requestData struct {
+		Email string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, 401, err.Error())
+		return
+	}
+
+	userID, err := auth.ValidateJWT(token, apiCfg.tokenSecret)
+	if err != nil {
+		respondWithError(w, 401, "Invalid token")
+		return
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	reqData := requestData{}
+	err = decoder.Decode(&reqData)
+	if err != nil {
+		log.Printf("Error decoding request body: %v", err)
+		w.WriteHeader(500)
+		return
+	}
+
+	if reqData.Email == "" {
+		respondWithError(w, 400, "No email was provided")
+		return
+	}
+	if reqData.Password == "" {
+		respondWithError(w, 400, "No password was provided")
+		return
+	}
+
+	passHash, err := auth.HashPassword(reqData.Password)
+	if err != nil {
+		log.Printf("Error hashing password: %v", err)
+		respondWithError(w, 500, "Error hashing password")
+	}
+
+	updateUserParams := database.UpdateUserParams{ID: userID, Email: reqData.Email, HashedPassword: passHash}
+	user, err := apiCfg.database.UpdateUser(r.Context(), updateUserParams)
+	if err != nil {
+		log.Printf("Error updating user: %v", err)
+		respondWithError(w, 500, "Error updating user")
+		return
+	}
+
+	updatedUser := UserResponse{
+		ID: user.ID,
+		Email: user.Email,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+	}
+	respondWithJSON(w, 200, updatedUser)
+}}
+
 func apiGetAllChirpsHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w http.ResponseWriter, r *http.Request) {
 	chirps, err := apiCfg.database.GetAllChirps(r.Context())
 	if err != nil {
