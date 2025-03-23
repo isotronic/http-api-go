@@ -61,6 +61,52 @@ func apiPostChirpsHandler(apiCfg *apiConfig) http.HandlerFunc {return func(w htt
 	respondWithJSON(w, 201, ChirpResponse(chirp))
 }}
 
+func apiDeleteChirpsHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w http.ResponseWriter, r *http.Request) {
+	pathParam := r.PathValue("chirpID")
+	if pathParam == "" {
+		respondWithError(w, 400, "No chirpID provided")
+		return
+	}
+
+	chirpID, err := uuid.Parse(pathParam)
+	if err != nil {
+		log.Printf("Error parsing UUID: %v", err)
+		respondWithError(w, 500, "ChirpID is invalid")
+		return
+	}
+	chirp, err := apiCfg.database.GetChirpById(r.Context(), chirpID)
+	if err != nil {
+		respondWithError(w, 404, "Chirp does not exist")
+		return
+	}
+
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, 401, err.Error())
+		return
+	}
+
+	userID, err := auth.ValidateJWT(token, apiCfg.tokenSecret)
+	if err != nil {
+		respondWithError(w, 401, "Invalid token")
+		return
+	}
+
+	if chirp.UserID != userID {
+		respondWithError(w, 403, "You are not authorized to delete this chirp")
+		return
+	}
+
+	err = apiCfg.database.DeleteChirpById(r.Context(), chirpID)
+	if err != nil {
+		log.Printf("Error deleting chirp: %v", err)
+		respondWithError(w, 500, "Error deleting chirp")
+		return
+	}
+
+	w.WriteHeader(204)
+}}
+
 func adminResetHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w http.ResponseWriter, r *http.Request) {
 	if apiCfg.platform == "" {
 		w.WriteHeader(403)

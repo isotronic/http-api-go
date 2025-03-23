@@ -9,5 +9,8 @@ SELECT * FROM chirps ORDER BY created_at;
 -- name: GetChirpById :one
 SELECT * FROM chirps WHERE id = $1;
 
+-- name: DeleteChirpById :exec
+DELETE FROM chirps WHERE id = $1;
+
 -- name: ResetChirps :exec
 DELETE FROM chirps;
