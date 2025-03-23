@@ -84,3 +84,12 @@ func (q *Queries) GetChirpById(ctx context.Context, id uuid.UUID) (Chirp, error)
 	)
 	return i, err
 }
+
+const resetChirps = `-- name: ResetChirps :exec
+DELETE FROM chirps
+`
+
+func (q *Queries) ResetChirps(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, resetChirps)
+	return err
+}

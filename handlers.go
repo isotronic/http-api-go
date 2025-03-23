@@ -73,6 +73,20 @@ func adminResetHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w http.
 		return
 	}
 
+	err = apiCfg.database.ResetChirps(r.Context())
+	if err != nil {
+		log.Printf("Error deleting chirps: %v", err)
+		respondWithError(w, 500, "Error deleting chirps")
+		return
+	}
+
+	err = apiCfg.database.ResetRefreshTokens(r.Context())
+	if err != nil {
+		log.Printf("Error deleting refresh tokens: %v", err)
+		respondWithError(w, 500, "Error deleting refresh tokens")
+		return
+	}
+
 	w.WriteHeader(200)
 }}
 
