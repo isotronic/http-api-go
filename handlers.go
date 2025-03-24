@@ -262,12 +262,31 @@ func apiUpdateUserHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w ht
 }}
 
 func apiGetAllChirpsHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w http.ResponseWriter, r *http.Request) {
-	chirps, err := apiCfg.database.GetAllChirps(r.Context())
-	if err != nil {
-		log.Printf("Error fetching chirps: %v", err)
-		respondWithError(w, 500, "Error fetching chirps")
-		return
+	authorID := r.URL.Query().Get("author_id")
+	var chirps []database.Chirp
+	var err error
+
+	if authorID == "" {
+		chirps, err = apiCfg.database.GetAllChirps(r.Context())
+		if err != nil {
+			log.Printf("Error fetching chirps: %v", err)
+			respondWithError(w, 500, "Error fetching chirps")
+			return
+		}
+	} else {
+		userID, err := uuid.Parse(authorID)
+		if err != nil {
+			respondWithError(w, 400, "Invalid author ID")
+			return
+		}
+		chirps, err = apiCfg.database.GetChirpsByUserId(r.Context(), userID)
+		if err != nil {
+			log.Printf("Error fetching chirps: %v", err)
+			respondWithError(w, 500, "Error fetching chirps")
+			return
+		}
 	}
+	
 
 	chirpResponse := make([]ChirpResponse, len(chirps))
 	for i, chirp := range chirps {
