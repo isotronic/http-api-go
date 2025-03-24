@@ -17,6 +17,7 @@ type apiConfig struct {
 	database *database.Queries
 	platform string
 	tokenSecret string
+	polkaKey string
 }
 
 func main() {
@@ -29,6 +30,7 @@ func main() {
 
 	apiCfg.platform = os.Getenv("PLATFORM")
 	apiCfg.tokenSecret = os.Getenv("TOKEN_SECRET")
+	apiCfg.polkaKey = os.Getenv("POLKA_KEY")
 
 	dbURL := os.Getenv("DB_URL")
 	if dbURL == "" {

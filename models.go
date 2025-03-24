@@ -7,9 +7,13 @@ import (
 )
 
 type LoginResponse struct {
-	AccessToken 	string 	`json:"token"`
-	RefreshToken 	string 	`json:"refresh_token"`
-	IsChirpyRed 	bool 		`json:"is_chirpy_red"`
+	ID        		uuid.UUID `json:"id"`
+	Email     		string    `json:"email"`
+	CreatedAt 		time.Time `json:"created_at"`
+	UpdatedAt 		time.Time `json:"updated_at"`
+	AccessToken 	string 		`json:"token"`
+	RefreshToken 	string 		`json:"refresh_token"`
+	IsChirpyRed 	bool 			`json:"is_chirpy_red"`
 }
 
 type RefreshResponse struct {

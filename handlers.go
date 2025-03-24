@@ -359,6 +359,10 @@ func apiLoginHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w http.Re
 	}
 
 	response := LoginResponse{
+		ID: user.ID,
+		Email: user.Email,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
 		AccessToken: jwt,
 		RefreshToken: refresh,
 		IsChirpyRed: user.IsChirpyRed,
@@ -414,9 +418,15 @@ func apiPolkaWebhooksHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w
 		} `json:"data"`
 	}
 
+	apiKey, err := auth.GetAPIKey(r.Header)
+	if err != nil || apiKey != apiCfg.polkaKey {
+		respondWithError(w, 401, "You are not authorized")
+		return
+	}
+
 	decoder := json.NewDecoder(r.Body)
 	reqData := requestData{}
-	err := decoder.Decode(&reqData)
+	err = decoder.Decode(&reqData)
 	if err != nil {
 		log.Printf("Error decoding request body: %v", err)
 		w.WriteHeader(500)
