@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sort"
 	"time"
 
 	"github.com/google/uuid"
@@ -285,6 +286,13 @@ func apiGetAllChirpsHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w 
 			respondWithError(w, 500, "Error fetching chirps")
 			return
 		}
+	}
+
+	sortQuery := r.URL.Query().Get("sort")
+	if sortQuery == "desc" {
+		sort.Slice(chirps, func(i, j int) bool {
+			return chirps[i].CreatedAt.After(chirps[j].CreatedAt)
+		})
 	}
 	
 
