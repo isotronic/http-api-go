@@ -196,6 +196,7 @@ func apiCreateUserHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w ht
 		Email: user.Email,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
+		IsChirpyRed: user.IsChirpyRed,
 	}
 	respondWithJSON(w, 201, newUser)
 }}
@@ -255,6 +256,7 @@ func apiUpdateUserHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w ht
 		Email: user.Email,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
+		IsChirpyRed: user.IsChirpyRed,
 	}
 	respondWithJSON(w, 200, updatedUser)
 }}
@@ -359,6 +361,7 @@ func apiLoginHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w http.Re
 	response := LoginResponse{
 		AccessToken: jwt,
 		RefreshToken: refresh,
+		IsChirpyRed: user.IsChirpyRed,
 	}
 	respondWithJSON(w, 200, response)
 }}

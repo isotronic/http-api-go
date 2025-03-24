@@ -7,8 +7,9 @@ import (
 )
 
 type LoginResponse struct {
-	AccessToken 	string `json:"token"`
-	RefreshToken 	string `json:"refresh_token"`
+	AccessToken 	string 	`json:"token"`
+	RefreshToken 	string 	`json:"refresh_token"`
+	IsChirpyRed 	bool 		`json:"is_chirpy_red"`
 }
 
 type RefreshResponse struct {
@@ -16,10 +17,11 @@ type RefreshResponse struct {
 }
 
 type UserResponse struct {
-	ID        uuid.UUID `json:"id"`
-	Email     string    `json:"email"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID        	uuid.UUID `json:"id"`
+	Email     	string    `json:"email"`
+	CreatedAt 	time.Time `json:"created_at"`
+	UpdatedAt 	time.Time `json:"updated_at"`
+	IsChirpyRed bool 			`json:"is_chirpy_red"`
 }
 
 type ChirpResponse struct {
