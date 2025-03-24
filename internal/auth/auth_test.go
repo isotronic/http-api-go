@@ -119,3 +119,45 @@ func TestGetBearerToken_MissingToken(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, "token missing", err.Error())
 }
+
+func TestMakeRefreshToken(t *testing.T) {
+	token, err := MakeRefreshToken()
+	assert.NoError(t, err)
+	assert.NotEmpty(t, token)
+	assert.Len(t, token, 64) // 32 bytes * 2 (hex encoding)
+}
+
+func TestGetAPIKey(t *testing.T) {
+	headers := http.Header{}
+	headers.Set("Authorization", "ApiKey validapikey")
+
+	apiKey, err := GetAPIKey(headers)
+	assert.NoError(t, err)
+	assert.Equal(t, "validapikey", apiKey)
+}
+
+func TestGetAPIKey_MissingAuthorizationHeader(t *testing.T) {
+	headers := http.Header{}
+
+	_, err := GetAPIKey(headers)
+	assert.Error(t, err)
+	assert.Equal(t, "authorization header missing", err.Error())
+}
+
+func TestGetAPIKey_WrongAuthorizationMethod(t *testing.T) {
+	headers := http.Header{}
+	headers.Set("Authorization", "Bearer invalidapikey")
+
+	_, err := GetAPIKey(headers)
+	assert.Error(t, err)
+	assert.Equal(t, "wrong authorization method", err.Error())
+}
+
+func TestGetAPIKey_MissingAPIKey(t *testing.T) {
+	headers := http.Header{}
+	headers.Set("Authorization", "ApiKey ")
+
+	_, err := GetAPIKey(headers)
+	assert.Error(t, err)
+	assert.Equal(t, "api key missing", err.Error())
+}
