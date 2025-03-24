@@ -12,5 +12,11 @@ RETURNING *;
 -- name: GetUserByEmail :one
 SELECT * FROM users WHERE email = $1;
 
+-- name: UpgradeUserToChirpyRed :one
+UPDATE users
+SET is_chirpy_red = TRUE
+WHERE id = $1
+RETURNING *;
+
 -- name: ResetUsers :exec
 DELETE FROM users;
