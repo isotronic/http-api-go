@@ -402,3 +402,42 @@ func apiRevokeHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w http.R
 	}
 	w.WriteHeader(204)
 }}
+
+func apiPolkaWebhooksHandler(apiCfg *apiConfig) http.HandlerFunc { return func(w http.ResponseWriter, r *http.Request) {
+	type requestData struct {
+		Event string `json:"event"`
+		Data struct {
+			UserID string `json:"user_id"`
+		} `json:"data"`
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	reqData := requestData{}
+	err := decoder.Decode(&reqData)
+	if err != nil {
+		log.Printf("Error decoding request body: %v", err)
+		w.WriteHeader(500)
+		return
+	}
+
+	if reqData.Event != "user.upgraded" {
+		w.WriteHeader(204)
+		return
+	}
+
+	userID, err := uuid.Parse(reqData.Data.UserID)
+	if err != nil {
+		log.Printf("Error parsing UUID: %v", err)
+		w.WriteHeader(400)
+		return
+	}
+
+	_, err = apiCfg.database.UpgradeUserToChirpyRed(r.Context(), userID)
+	if err != nil {
+		log.Printf("Error upgrading user to chirpy red: %v", err)
+		w.WriteHeader(500)
+		return
+	}
+
+	w.WriteHeader(204)
+}}
